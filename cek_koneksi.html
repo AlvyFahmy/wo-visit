@@ -2,132 +2,71 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reviewer Koneksi Google Sheets</title>
+    <title>Connection Checker - WO System</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; }
-        .section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { color: #0984e3; border-left: 5px solid #00b894; padding-left: 10px; margin-top: 0; }
-        .status { font-weight: bold; padding: 10px; border-radius: 5px; margin-bottom: 10px; display: inline-block; }
-        .success { background: #dff9fb; color: #009432; }
-        .error { background: #fab1a0; color: #d63031; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #0984e3; padding-bottom: 10px; color: #2d3436; }
+        .status { font-weight: bold; padding: 5px 10px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
+        .ok { background: #dff9fb; color: #009432; }
+        .err { background: #fab1a0; color: #d63031; }
         .loading { background: #fff9c4; color: #f57f17; }
-        
-        .table-container { overflow-x: auto; max-height: 300px; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #2d3436; color: white; position: sticky; top: 0; padding: 12px; text-align: left; white-space: nowrap; }
-        td { padding: 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
-        tr:hover { background: #f1f2f6; }
-        .info-gid { font-size: 12px; color: #636e72; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f8f9fa; }
     </style>
 </head>
 <body>
-
-    <h1>🔍 Reviewer Koneksi Sheet</h1>
-    <p>Gunakan halaman ini untuk memastikan data terbaca sebelum menggunakan aplikasi utama.</p>
-
-    <!-- 1. USER LOGIN -->
-    <div class="section">
-        <h2>1. Sheet: userlogin (GID: 0)</h2>
-        <div class="info-gid">Data untuk pengecekan Username & Password</div>
-        <div id="stat-user" class="status loading">Mencoba terhubung...</div>
-        <div class="table-container">
-            <table id="table-user"><thead><tr id="head-user"></tr></thead><tbody id="body-user"></tbody></table>
-        </div>
-    </div>
-
-    <!-- 2. WO SCHEDULE -->
-    <div class="section">
-        <h2>2. Sheet: wo-schedule (GID: 1420691938)</h2>
-        <div class="info-gid">Data jadwal kunjungan yang akan tampil di dashboard</div>
-        <div id="stat-wo" class="status loading">Mencoba terhubung...</div>
-        <div class="table-container">
-            <table id="table-wo"><thead><tr id="head-wo"></tr></thead><tbody id="body-wo"></tbody></table>
-        </div>
-    </div>
-
-    <!-- 3. REASON -->
-    <div class="section">
-        <h2>3. Sheet: reason (GID: 1394679585)</h2>
-        <div class="info-gid">Data dropdown untuk pilihan hasil survei</div>
-        <div id="stat-reason" class="status loading">Mencoba terhubung...</div>
-        <div class="table-container">
-            <table id="table-reason"><thead><tr id="head-reason"></tr></thead><tbody id="body-reason"></tbody></table>
-        </div>
-    </div>
-
-    <!-- 4. HASIL SURVEI -->
-    <div class="section">
-        <h2>4. Sheet: hasilsurvei (GID: 1369807600)</h2>
-        <div class="info-gid">Data laporan yang sudah masuk (History)</div>
-        <div id="stat-history" class="status loading">Mencoba terhubung...</div>
-        <div class="table-container">
-            <table id="table-history"><thead><tr id="head-history"></tr></thead><tbody id="body-history"></tbody></table>
-        </div>
-    </div>
+    <h1>🔍 Spreadsheet Connection Reviewer</h1>
+    <p>ID: <code>14XRw8TmhAGAk-EunatQzhq6TKXfRfFi2gV2Wf7lCqP8</code></p>
+    
+    <div id="results"></div>
 
 <script>
-    const SPREADSHEET_ID = "2PACX-1vT0gEbRatVcBbAXTOiDUUIS5OWJbFGY3kAntaOdCDzj1ELA-SPPsZxWUo_gjsYi5F1u4831VZODVUwV";
-    const BASE_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=`;
-
+    const SID = "14XRw8TmhAGAk-EunatQzhq6TKXfRfFi2gV2Wf7lCqP8";
     const GIDS = {
-        user: "0",
-        wo: "1420691938",
-        reason: "1394679585",
-        history: "1369807600"
+        "userlogin (User Auth)": "0",
+        "wo-schedule (Jadwal)": "1420691938",
+        "reason (Dropdown)": "1394679585",
+        "hasilsurvei (History)": "1369807600"
     };
 
-    async function checkSheet(key, gid) {
-        const statEl = document.getElementById(`stat-${key}`);
-        const headEl = document.getElementById(`head-${key}`);
-        const bodyEl = document.getElementById(`body-${key}`);
+    async function check(name, gid) {
+        const container = document.getElementById('results');
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.innerHTML = `<h2>${name}</h2><div id="stat-${gid}" class="status loading">Menghubungkan...</div><div id="tbl-${gid}"></div>`;
+        container.appendChild(box);
 
         try {
-            const response = await fetch(BASE_URL + gid);
-            const text = await response.text();
-            
-            // Parsing JSON dari format Google
+            const res = await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:json&gid=${gid}`);
+            const text = await res.text();
             const json = JSON.parse(text.substr(47).slice(0, -2));
-            const cols = json.table.cols;
-            const rows = json.table.rows;
+            
+            const stat = document.getElementById(`stat-${gid}`);
+            stat.className = "status ok";
+            stat.innerText = `✓ TERHUBUNG (${json.table.rows.length} Baris Data)`;
 
-            if (rows.length === 0) {
-                statEl.className = "status error";
-                statEl.innerText = "Terhubung, tapi data kosong.";
-                return;
-            }
-
-            // Buat Header
-            cols.forEach(c => {
-                let th = document.createElement('th');
-                th.innerText = c.label || "Kolom Tanpa Nama";
-                headEl.appendChild(th);
+            let html = '<table><thead><tr>';
+            json.table.cols.forEach(c => html += `<th>${c.label || '-'}</th>`);
+            html += '</tr></thead><tbody>';
+            
+            json.table.rows.slice(0, 3).forEach(r => {
+                html += '<tr>';
+                r.c.forEach(v => html += `<td>${v ? (v.f || v.v) : ''}</td>`);
+                html += '</tr>';
             });
+            html += '</tbody></table>';
+            document.getElementById(`tbl-${gid}`).innerHTML = html;
 
-            // Isi Data
-            rows.forEach(r => {
-                let tr = document.createElement('tr');
-                r.c.forEach(v => {
-                    let td = document.createElement('td');
-                    td.innerText = v ? (v.f || v.v) : "-";
-                    tr.appendChild(td);
-                });
-                bodyEl.appendChild(tr);
-            });
-
-            statEl.className = "status success";
-            statEl.innerText = `Berhasil: ${rows.length} Baris ditemukan.`;
-
-        } catch (err) {
-            statEl.className = "status error";
-            statEl.innerText = "Gagal terhubung! Pastikan Sheet sudah di-'Publish to Web'.";
-            console.error(err);
+        } catch (e) {
+            const stat = document.getElementById(`stat-${gid}`);
+            stat.className = "status err";
+            stat.innerText = "❌ GAGAL: " + e.message;
         }
     }
 
-    // Eksekusi pengecekan untuk semua sheet
-    Object.keys(GIDS).forEach(key => checkSheet(key, GIDS[key]));
+    Object.keys(GIDS).forEach(key => check(key, GIDS[key]));
 </script>
-
 </body>
 </html>
