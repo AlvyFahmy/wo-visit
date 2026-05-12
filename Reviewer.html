@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Mode - Cek Data Google Sheets</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow-x: auto; }
+        h2 { color: #0984e3; border-bottom: 2px solid #0984e3; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #00b894; color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .loading { color: orange; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Data Checker - WO Visit System</h1>
+    <p>Script ini menampilkan data asli dari Google Sheets untuk verifikasi header dan isi.</p>
+
+    <!-- Section User -->
+    <div class="section">
+        <h2>1. Sheet: USER (Auth Data)</h2>
+        <div id="status-user" class="loading">Memuat...</div>
+        <table id="table-user"><thead><tr id="head-user"></tr></thead><tbody id="body-user"></tbody></table>
+    </div>
+
+    <!-- Section WO -->
+    <div class="section">
+        <h2>2. Sheet: WO (Work Orders)</h2>
+        <div id="status-wo" class="loading">Memuat...</div>
+        <table id="table-wo"><thead><tr id="head-wo"></tr></thead><tbody id="body-wo"></tbody></table>
+    </div>
+
+    <!-- Section Reason -->
+    <div class="section">
+        <h2>3. Sheet: REASON (Dropdown Options)</h2>
+        <div id="status-reason" class="loading">Memuat...</div>
+        <table id="table-reason"><thead><tr id="head-reason"></tr></thead><tbody id="body-reason"></tbody></table>
+    </div>
+
+    <!-- Section History -->
+    <div class="section">
+        <h2>4. Sheet: HISTORY (Submitted Reports)</h2>
+        <div id="status-history" class="loading">Memuat...</div>
+        <table id="table-history"><thead><tr id="head-history"></tr></thead><tbody id="body-history"></tbody></table>
+    </div>
+
+<script>
+    const SOURCES = {
+        user: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqqaReNso-O5jfJeWGgTL-MujsGSClAMSeHU2TnvOrz72Cwxg3jXF-Yc72VDI-MqpMzN2hLtZZnnfY/gviz/tq?tqx=out:json",
+        wo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYwME5HDwTNsKY7HTMawXtrt0wauwN5P3N_8rgLwH-AeR0kohtc3C5zw9gPaXTZrbWsTVpgKasiQZE/gviz/tq?tqx=out:json",
+        reason: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT390YPmnjp24lrtF1iibWq_jCS5elJn_jHRAqRFAFEkbrmC5L2VEp0gHEXGxzhB55uhZTuZWSGSoNE/gviz/tq?tqx=out:json",
+        history: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRohrCVA8Nuq7huEi7TOXw7WWEjQV7NHCwfCjITTNpIq5Tdj6Xvub6ZOcjmk1DAde8dCaHqoQYSTnX2/gviz/tq?tqx=out:json"
+    };
+
+    async function displayData(key) {
+        const statusEl = document.getElementById(`status-${key}`);
+        const headEl = document.getElementById(`head-${key}`);
+        const bodyEl = document.getElementById(`body-${key}`);
+
+        try {
+            const res = await fetch(SOURCES[key]);
+            const text = await res.text();
+            // Membersihkan format Google JSON
+            const json = JSON.parse(text.substr(47).slice(0, -2));
+            
+            const cols = json.table.cols;
+            const rows = json.table.rows;
+
+            if (rows.length === 0) {
+                statusEl.innerHTML = `<span class="error">Data Kosong di Google Sheet.</span>`;
+                return;
+            }
+
+            // Render Header
+            cols.forEach(c => {
+                let th = document.createElement('th');
+                th.innerText = c.label || "Tanpa Label";
+                headEl.appendChild(th);
+            });
+
+            // Render Rows
+            rows.forEach(r => {
+                let tr = document.createElement('tr');
+                r.c.forEach(v => {
+                    let td = document.createElement('td');
+                    td.innerText = v ? (v.f || v.v) : "-";
+                    tr.appendChild(td);
+                });
+                bodyEl.appendChild(tr);
+            });
+
+            statusEl.innerHTML = `<span class="success">Berhasil memuat ${rows.length} baris.</span>`;
+
+        } catch (e) {
+            statusEl.innerHTML = `<span class="error">Gagal Memuat! Pastikan Sheet sudah di-"Publish to Web". Error: ${e.message}</span>`;
+        }
+    }
+
+    // Jalankan pengecekan
+    Object.keys(SOURCES).forEach(key => displayData(key));
+</script>
+
+</body>
+</html>
