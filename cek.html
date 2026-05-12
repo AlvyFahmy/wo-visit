@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debugger Spesifik</title></head>
+<body>
+    <h3>Hasil Diagnosa:</h3>
+    <pre id="log" style="background:#eee; padding:10px;"></pre>
+
+<script>
+    const log = (msg) => document.getElementById('log').innerText += msg + "\n";
+    const SID = "2PACX-1vT0gEbRatVcBbAXTOiDUUIS5OWJbFGY3kAntaOdCDzj1ELA-SPPsZxWUo_gjsYi5F1u4831VZODVUwV";
+    
+    async function test(name, gid) {
+        try {
+            const url = `https://docs.google.com/spreadsheets/d/e/${SID}/gviz/tq?tqx=out:json&gid=${gid}`;
+            const res = await fetch(url);
+            const text = await res.text();
+            
+            if (text.includes("google.visualization.Query.setResponse")) {
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                const headers = json.table.cols.map(c => c.label);
+                log(`✅ ${name}: Terhubung!`);
+                log(`   Kolom yang ditemukan: [${headers.join(", ")}]`);
+                log(`   Jumlah baris data: ${json.table.rows.length}`);
+            } else {
+                log(`❌ ${name}: Format tidak dikenali.`);
+            }
+        } catch (e) {
+            log(`❌ ${name}: Gagal total! Error: ${e.message}`);
+        }
+    }
+
+    log("Memulai pengecekan...");
+    test("User Login", "0");
+    test("WO Schedule", "1420691938");
+    test("Reason", "1394679585");
+    test("Hasil Survei", "1369807600");
+</script>
+</body>
+</html>
