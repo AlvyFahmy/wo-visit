@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connection Checker - WO System V2</title>
+    <title>Strict Connection Checker - WO System</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: auto; }
-        .box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-top: 4px solid #0984e3; }
-        h2 { margin-top: 0; color: #2d3436; font-size: 1.2rem; display: flex; justify-content: space-between; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 5px solid #0984e3; }
+        h2 { margin-top: 0; color: #2d3436; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .status { font-weight: bold; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: inline-block; margin-bottom: 15px; }
-        .ok { background: #dff9fb; color: #009432; border: 1px solid #badc58; }
-        .err { background: #fab1a0; color: #d63031; border: 1px solid #ff7675; }
-        .loading { background: #fff9c4; color: #f57f17; }
+        .ok { background: #dff9fb; color: #009432; }
+        .err { background: #fab1a0; color: #d63031; }
         
-        .table-wrapper { overflow-x: auto; border: 1px solid #eee; border-radius: 8px; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { background: #f8f9fa; color: #636e72; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 10px; border-bottom: 1px solid #f1f1f1; white-space: nowrap; }
-        tr:last-child td { border-bottom: none; }
-        .badge-gid { font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #666; }
+        th { background: #00b894; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        td { padding: 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .gid-tag { font-size: 10px; background: #dfe6e9; padding: 2px 5px; border-radius: 4px; color: #636e72; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🔍 Spreadsheet Data Reviewer</h1>
-        <p>Gunakan halaman ini untuk memverifikasi data sebelum masuk ke aplikasi utama.</p>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin-bottom: 30px;">
+        <h1>🔍 Data Reviewer (Strict Mode)</h1>
+        <p>Header dan Data telah dipaksa rapat tanpa jeda baris kosong.</p>
         
         <div id="results"></div>
     </div>
@@ -35,10 +33,10 @@
 <script>
     const SID = "14XRw8TmhAGAk-EunatQzhq6TKXfRfFi2gV2Wf7lCqP8";
     const GIDS = {
-        "userlogin (Akses User)": "0",
-        "wo-schedule (Data Jadwal)": "1420691938",
-        "reason (Opsi Dropdown)": "1394679585",
-        "hasilsurvei (Data Masuk)": "1369807600"
+        "userlogin": "0",
+        "wo-schedule": "1420691938",
+        "reason": "1394679585",
+        "hasilsurvei": "1369807600"
     };
 
     async function check(name, gid) {
@@ -46,9 +44,9 @@
         const box = document.createElement('div');
         box.className = 'box';
         box.innerHTML = `
-            <h2>${name} <span class="badge-gid">GID: ${gid}</span></h2>
-            <div id="stat-${gid}" class="status loading">⏳ Sedang menarik data...</div>
-            <div class="table-wrapper" id="tbl-wrapper-${gid}"></div>
+            <h2>${name.toUpperCase()} <span class="gid-tag">GID: ${gid}</span></h2>
+            <div id="stat-${gid}" class="status">Menghubungkan...</div>
+            <div class="table-wrapper" id="tbl-${gid}"></div>
         `;
         container.appendChild(box);
 
@@ -57,52 +55,52 @@
             const text = await res.text();
             const json = JSON.parse(text.substr(47).slice(0, -2));
             
-            // --- LOGIKA PEMBERSIH DATA (Menghapus baris kosong/jeda) ---
+            // --- LOGIKA FILTER KETAT UNTUK MENGHILANGKAN JEDA ---
             const cleanRows = json.table.rows.filter(row => {
-                if (!row.c || row.c.length === 0) return false;
-                // Cek apakah kolom pertama (A) ada isinya dan bukan hanya strip/kosong
-                const firstCell = row.c[0] ? (row.c[0].f || row.c[0].v || "").toString().trim() : "";
-                return firstCell !== "" && firstCell !== "-";
+                if (!row.c) return false;
+                // Ambil nilai kolom pertama sebagai patokan (A1, B1, dst)
+                const firstColValue = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
+                // Buang jika kolom pertama kosong, hanya spasi, atau hanya strip
+                return firstColValue !== "" && firstColValue !== "-";
             });
 
             const stat = document.getElementById(`stat-${gid}`);
             if (cleanRows.length > 0) {
                 stat.className = "status ok";
-                stat.innerText = `✅ TERHUBUNG: ${cleanRows.length} Baris Data Ditemukan`;
-                
-                // Bangun Tabel
+                stat.innerText = `✅ TERHUBUNG: ${cleanRows.length} Baris Terdeteksi`;
+
                 let html = '<table><thead><tr>';
+                // Render Header
                 json.table.cols.forEach(c => {
-                    html += `<th>${c.label || "Tanpa Label"}</th>`;
+                    if (c.label) html += `<th>${c.label.trim()}</th>`;
                 });
                 html += '</tr></thead><tbody>';
-                
-                // Tampilkan maksimal 5 baris teratas saja untuk review
-                cleanRows.slice(0, 5).forEach(r => {
+
+                // Render Data (Maksimal 10 baris agar tidak kepanjangan)
+                cleanRows.slice(0, 10).forEach(r => {
                     html += '<tr>';
-                    r.c.forEach(v => {
-                        const cellVal = v ? (v.f || v.v || "") : "";
-                        html += `<td>${cellVal}</td>`;
+                    r.c.forEach((v, index) => {
+                        // Hanya tampilkan kolom yang punya header
+                        if (json.table.cols[index] && json.table.cols[index].label) {
+                            const val = v ? (v.f || v.v || "") : "";
+                            html += `<td>${val}</td>`;
+                        }
                     });
                     html += '</tr>';
                 });
-                
                 html += '</tbody></table>';
-                document.getElementById(`tbl-wrapper-${gid}`).innerHTML = html;
+                document.getElementById(`tbl-${gid}`).innerHTML = html;
             } else {
                 stat.className = "status err";
-                stat.innerText = "⚠️ Terhubung, tetapi TIDAK ADA DATA yang terbaca di baris pertama.";
+                stat.innerText = "❌ Gagal: Data tidak ditemukan atau sheet kosong.";
             }
-
         } catch (e) {
-            const stat = document.getElementById(`stat-${gid}`);
-            stat.className = "status err";
-            stat.innerText = "❌ GAGAL KONEKSI: " + e.message;
-            console.error(e);
+            document.getElementById(`stat-${gid}`).className = "status err";
+            document.getElementById(`stat-${gid}`).innerText = "❌ Error: " + e.message;
         }
     }
 
-    // Jalankan pengecekan untuk semua GID secara berurutan
+    // Jalankan pengecekan
     Object.keys(GIDS).forEach(key => check(key, GIDS[key]));
 </script>
 
