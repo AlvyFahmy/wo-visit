@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WO Visit System - Terhubung</title>
+    <title>WO Visit System - Official</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --primary: #00b894; --secondary: #0984e3; --dark: #2d3436; --bg: #f1f2f6; }
@@ -31,7 +31,6 @@
     <p style="margin-top:10px; font-size:12px;">Sinkronisasi Data Google Sheets...</p>
 </div>
 
-<!-- PAGE: LOGIN -->
 <section id="loginPage">
     <div class="login-card">
         <h2 style="margin:0; color: var(--secondary)">WO VISIT</h2>
@@ -44,7 +43,6 @@
     </div>
 </section>
 
-<!-- PAGE: MAIN DASHBOARD -->
 <section id="mainPage" class="hidden">
     <div class="header">
         <div>
@@ -71,8 +69,9 @@
 </section>
 
 <script>
-    // URL Dasar menggunakan ID Spreadsheet Anda
-    const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT0gEbRatVcBbAXTOiDUUIS5OWJbFGY3kAntaOdCDzj1ELA-SPPsZxWUo_gjsYi5F1u4831VZODVUwV/gviz/tq?tqx=out:json&gid=";
+    // UPDATE: Menggunakan ID Spreadsheet baru Anda
+    const SID = "14XRw8TmhAGAk-EunatQzhq6TKXfRfFi2gV2Wf7lCqP8";
+    const BASE = `https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:json&gid=`;
     
     const SOURCES = {
         user: BASE + "0",
@@ -162,7 +161,6 @@
         renderList();
     }
 
-    // Jalankan sinkronisasi awal saat buka file
     initSystem();
 </script>
 </body>
